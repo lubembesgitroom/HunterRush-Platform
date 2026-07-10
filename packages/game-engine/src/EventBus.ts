@@ -1,10 +1,16 @@
 import { EventEmitter } from "node:events";
-import type { GameRoundEvent } from "./types.js";
+
+import type {
+  GameRoundEvent,
+  MultiplierEvent,
+} from "./types.js";
 
 export interface GameEventMap {
   "round:created": GameRoundEvent;
   "betting:opened": GameRoundEvent;
   "round:started": GameRoundEvent;
+  "multiplier:updated": MultiplierEvent;
+  "player:cashedout": unknown;
   "round:crashed": GameRoundEvent;
   "round:revealed": GameRoundEvent;
 }

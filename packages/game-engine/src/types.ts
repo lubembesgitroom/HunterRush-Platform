@@ -9,3 +9,7 @@ export interface StateTransition {
 export interface GameRoundEvent {
   round: RoundResult;
 }
+
+export interface MultiplierEvent {
+  multiplier: number;
+}
