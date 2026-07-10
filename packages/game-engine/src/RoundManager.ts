@@ -8,8 +8,16 @@ export class RoundManager {
     return this.currentRound;
   }
 
-  getCurrent(): RoundResult | null {
+  current(): RoundResult | null {
     return this.currentRound;
+  }
+
+  crashPoint(): number {
+    if (!this.currentRound) {
+      throw new Error("No active round.");
+    }
+
+    return this.currentRound.multiplier;
   }
 
   clear(): void {

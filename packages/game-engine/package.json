@@ -10,7 +10,10 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx src/test.ts",
     "test:timer": "tsx src/timer.test.ts",
-    "test:multiplier": "tsx src/multiplier.test.ts"
+    "test:multiplier": "tsx src/multiplier.test.ts",
+    "test:loop": "tsx src/loop.test.ts",
+    "test:clock": "tsx src/clock.test.ts",
+    "test:phase": "tsx src/phase.test.ts"
   },
   "dependencies": {
     "@hunterrush/provably-fair": "workspace:*"

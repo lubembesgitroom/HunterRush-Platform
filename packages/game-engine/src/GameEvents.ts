@@ -1,16 +1,10 @@
 export const GameEvents = {
   ROUND_CREATED: "round:created",
-
   BETTING_OPENED: "betting:opened",
-
   ROUND_STARTED: "round:started",
-
   MULTIPLIER_UPDATED: "multiplier:updated",
-
   PLAYER_CASHED_OUT: "player:cashedout",
-
   ROUND_CRASHED: "round:crashed",
-
   ROUND_REVEALED: "round:revealed",
 } as const;
 

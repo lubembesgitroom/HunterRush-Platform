@@ -1,23 +1,35 @@
 export class Timer {
-  private handle: NodeJS.Timeout | null = null;
+  private timeout: NodeJS.Timeout | null = null;
+  private interval: NodeJS.Timeout | null = null;
 
-  start(delay: number, callback: () => void): void {
+  once(delay: number, callback: () => void): void {
     this.stop();
-    this.handle = setTimeout(callback, delay);
+
+    this.timeout = setTimeout(() => {
+      this.timeout = null;
+      callback();
+    }, delay);
+  }
+
+  repeat(intervalMs: number, callback: () => void): void {
+    this.stop();
+
+    this.interval = setInterval(callback, intervalMs);
   }
 
   stop(): void {
-    if (this.handle) {
-      clearTimeout(this.handle);
-      this.handle = null;
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+      this.timeout = null;
+    }
+
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
     }
   }
 
-  restart(delay: number, callback: () => void): void {
-    this.start(delay, callback);
-  }
-
   get running(): boolean {
-    return this.handle !== null;
+    return this.timeout !== null || this.interval !== null;
   }
 }

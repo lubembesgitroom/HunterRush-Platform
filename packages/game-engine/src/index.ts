@@ -1,5 +1,6 @@
 export * from "./GameState.js";
 export * from "./GameEvents.js";
+export * from "./GameLoop.js";
 export * from "./StateMachine.js";
 export * from "./RoundManager.js";
 export * from "./GameEngine.js";
@@ -7,3 +8,5 @@ export * from "./Multiplier.js";
 export * from "./Timer.js";
 export * from "./EventBus.js";
 export * from "./types.js";
+export * from "./GameClock.js";
+export * from "./PhaseController.js";
