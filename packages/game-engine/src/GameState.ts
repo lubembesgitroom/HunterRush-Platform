@@ -1,0 +1,7 @@
+export enum GameState {
+  WAITING = "WAITING",
+  BETTING = "BETTING",
+  RUNNING = "RUNNING",
+  CRASHED = "CRASHED",
+  REVEAL = "REVEAL",
+}
