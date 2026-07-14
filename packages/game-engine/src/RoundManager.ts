@@ -1,30 +1,51 @@
-import { createRound, type RoundResult } from "@hunterrush/provably-fair";
+import { randomUUID } from "node:crypto";
+
+import type { FairRound } from "./ProvablyFairService.js";
+import type { GameRound } from "./types.js";
 
 export class RoundManager {
-  private currentRound: RoundResult | null = null;
+  private currentRound: GameRound | null = null;
 
-  create(): RoundResult {
-    this.currentRound = createRound();
-    return this.currentRound;
-  }
+  private history: GameRound[] = [];
 
-  current(): RoundResult | null {
-    return this.currentRound;
-  }
+  create(fair: FairRound): GameRound {
+    const round: GameRound = {
+      id: randomUUID(),
+      createdAt: Date.now(),
 
-  crashPoint(): number {
-    if (!this.currentRound) {
-      throw new Error("No active round.");
+      crashPoint: fair.crashPoint,
+
+      serverSeed: fair.serverSeed,
+      serverSeedHash: fair.serverSeedHash,
+      clientSeed: fair.clientSeed,
+      nonce: fair.nonce,
+    };
+
+    this.currentRound = round;
+
+    this.history.unshift(round);
+
+    if (this.history.length > 20) {
+      this.history.pop();
     }
 
-    return this.currentRound.multiplier;
+    return round;
+  }
+
+  getCurrent(): GameRound | null {
+    return this.currentRound;
+  }
+
+  finish(): void {
+    this.currentRound = null;
+  }
+
+  getHistory(): GameRound[] {
+    return [...this.history];
   }
 
   clear(): void {
     this.currentRound = null;
-  }
-
-  hasRound(): boolean {
-    return this.currentRound !== null;
+    this.history = [];
   }
 }

@@ -1,13 +1,21 @@
-import type { RoundResult } from "@hunterrush/provably-fair";
+export interface GameRound {
+  id: string;
 
-export interface StateTransition {
-  from: string;
-  to: string;
-  timestamp: number;
+  createdAt: number;
+
+  crashPoint: number;
+
+  serverSeed: string;
+
+  serverSeedHash: string;
+
+  clientSeed: string;
+
+  nonce: number;
 }
 
 export interface GameRoundEvent {
-  round: RoundResult;
+  round: GameRound;
 }
 
 export interface MultiplierEvent {

@@ -8,7 +8,7 @@ engine.events.onEvent(
   ({ round }) => {
     console.log(
       "🎲 New Round",
-      round.multiplier,
+      `Crash Point: ${round.crashPoint.toFixed(2)}x`,
     );
   },
 );
@@ -23,7 +23,7 @@ engine.events.onEvent(
 engine.events.onEvent(
   GameEvents.MULTIPLIER_UPDATED,
   ({ multiplier }) => {
-    console.log(multiplier);
+    console.log(`${multiplier.toFixed(2)}x`);
   },
 );
 
@@ -37,7 +37,7 @@ engine.events.onEvent(
 engine.events.onEvent(
   GameEvents.ROUND_REVEALED,
   () => {
-    console.log("🔓 Revealed");
+    console.log("🔓 Round Revealed");
   },
 );
 

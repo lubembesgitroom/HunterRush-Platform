@@ -1,82 +1,65 @@
+import Header from "@/components/layout/Header";
+
+import GameCanvas from "@/components/GameCanvas";
+import BetSection from "@/components/BetSection";
+
+import RoundHistory from "@/components/RoundHistory";
+import LiveBets from "@/components/LiveBets";
+import Statistics from "@/components/Statistics";
+
 export default function Home() {
   return (
     <main
       style={{
         minHeight: "100vh",
-        background: "#0b1020",
-        color: "white",
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: "Arial, sans-serif",
+        background: "#0f0f0f",
+        color: "#ffffff",
       }}
     >
       {/* Header */}
-      <header
+
+      <Header />
+
+      {/* Main Content */}
+
+      <div
         style={{
-          height: 70,
+          maxWidth: 1400,
+          margin: "0 auto",
+          padding: 24,
+
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "0 24px",
-          borderBottom: "1px solid #1f2937",
+          flexDirection: "column",
+          gap: 24,
         }}
       >
-        <h1>HunterRush</h1>
+        {/* Game Canvas */}
 
-        <span style={{ color: "#22c55e" }}>
-          ● Connected
-        </span>
-      </header>
+        <GameCanvas />
 
-      {/* Main Area */}
-      <section
-        style={{
-          flex: 1,
-          display: "grid",
-          gridTemplateColumns: "320px 1fr",
-        }}
-      >
-        {/* Betting Panel */}
-        <aside
-          style={{
-            borderRight: "1px solid #1f2937",
-            padding: 20,
-          }}
-        >
-          <h2>Bet Panel</h2>
+        {/* Betting */}
 
-          <p>Bet Slot A</p>
+        <BetSection />
 
-          <p>Bet Slot B</p>
+        {/* Dashboard */}
 
-          <p>Auto Cashout</p>
-        </aside>
-
-        {/* Game View */}
         <section
           style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            fontSize: 36,
+            display: "grid",
+
+            gridTemplateColumns:
+              "1fr 1fr 1fr",
+
+            gap: 20,
           }}
         >
-          Game Viewport
-        </section>
-      </section>
+          <RoundHistory />
 
-      {/* Footer */}
-      <footer
-        style={{
-          height: 45,
-          borderTop: "1px solid #1f2937",
-          display: "flex",
-          alignItems: "center",
-          padding: "0 20px",
-        }}
-      >
-        Round #1 • Waiting for next round...
-      </footer>
+          <LiveBets />
+
+          <Statistics />
+        </section>
+      </div>
     </main>
   );
 }

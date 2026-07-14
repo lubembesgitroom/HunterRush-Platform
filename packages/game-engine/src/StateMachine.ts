@@ -1,5 +1,10 @@
 import { GameState } from "./GameState.js";
-import type { StateTransition } from "./types.js";
+
+export interface StateTransition {
+  from: GameState;
+  to: GameState;
+  timestamp: number;
+}
 
 export class StateMachine {
   private state: GameState = GameState.WAITING;

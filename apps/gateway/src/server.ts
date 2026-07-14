@@ -1,21 +1,45 @@
-import { buildApp } from "./app.js";
+import Fastify from "fastify";
+
+import { attachGame } from "./game.js";
+import { createSocketServer } from "./socket.js";
+
+const app = Fastify({
+  logger: true,
+});
+
+app.get("/", async () => ({
+  service: "HunterRush Gateway",
+  status: "running",
+}));
+
+app.get("/health", async () => ({
+  status: "ok",
+  service: "hunterrush-gateway",
+  version: "0.2.0",
+  timestamp: new Date().toISOString(),
+}));
+
+const io = createSocketServer(app.server);
+
+attachGame(io);
+
+const PORT = Number(process.env.PORT ?? 4000);
 
 async function start() {
-  const app = buildApp();
-
   try {
     await app.listen({
+      port: PORT,
       host: "0.0.0.0",
-      port: 4000,
     });
 
     console.log("");
-    console.log("==================================");
-    console.log(" HunterRush Gateway");
-    console.log(" Running on http://localhost:4000");
-    console.log("==================================");
-  } catch (err) {
-    app.log.error(err);
+    console.log("════════════════════════════════════");
+    console.log("🚀 HunterRush Gateway Running");
+    console.log(`HTTP      http://localhost:${PORT}`);
+    console.log(`Socket.IO ws://localhost:${PORT}`);
+    console.log("════════════════════════════════════");
+  } catch (error) {
+    app.log.error(error);
     process.exit(1);
   }
 }

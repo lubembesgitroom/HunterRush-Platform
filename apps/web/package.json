@@ -1,20 +1,24 @@
 {
   "name": "web",
   "version": "0.1.0",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint --max-warnings 0",
-    "check-types": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@hunterrush/game-engine": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.2",
     "next": "16.2.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "socket.io-client": "^4.8.3",
+    "tailwindcss": "^4.3.2"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
