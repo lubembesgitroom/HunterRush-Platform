@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { useGame } from "@/hooks/useGame";
 
+import { useHost } from "@/hooks/useHost";
 import Panel from "@/components/ui/Panel";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -26,6 +27,10 @@ export default function BetCard({
     snapshot,
     placeBet,
   } = useGame();
+
+  const {
+    deposit,
+  } = useHost();
 
   const phase = snapshot?.phase ?? "WAITING";
 
@@ -78,6 +83,23 @@ export default function BetCard({
             {formatCurrency(balance)}
           </strong>
         </div>
+{/* Deposit */}
+
+<Button
+  fullWidth
+  onClick={deposit}
+  style={{
+    background: "#2563EB",
+
+    color: "#FFFFFF",
+
+    marginTop: 6,
+
+    marginBottom: 4,
+  }}
+>
+  DEPOSIT
+</Button>
 
         {/* Bet Amount */}
 
