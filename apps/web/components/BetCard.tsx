@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 
 import { formatCurrency } from "@/utils/formatCurrency";
+import { useBetStore } from "@/store/betStore";
 
 interface BetCardProps {
   title: string;
@@ -36,10 +37,11 @@ export default function BetCard({
   title,
 }: BetCardProps) {
   const {
-    balance: realBalance,
-    snapshot,
-    placeBet,
-  } = useGame();
+  balance: realBalance,
+  snapshot,
+  placeBet,
+  cashout,
+} = useGame();
 
   const {
     isDemo,
@@ -48,6 +50,7 @@ export default function BetCard({
   } = useDemo();
 
   const { deposit } = useHost();
+  const { activeBet } = useBetStore();
 
   const balance = isDemo
     ? demoBalance
@@ -63,10 +66,8 @@ export default function BetCard({
   const [amount, setAmount] =
     useState(100);
 
-  const [
-    autoCashout,
-    setAutoCashout,
-  ] = useState(2);
+  const [autoCashout, setAutoCashout] =
+  useState<number | null>(null);
 
   function handleBet() {
     if (!bettingOpen) return;
@@ -238,17 +239,43 @@ export default function BetCard({
         </div>
 
         <div>
-          <div
-            style={{
-              color: "#9CA3AF",
-              marginBottom: 8,
-              fontSize: 12,
-              textTransform:
-                "uppercase",
-            }}
-          >
-            Auto Cash Out
-          </div>
+  <div
+    style={{
+      color: "#9CA3AF",
+      marginBottom: 8,
+      fontSize: 12,
+      textTransform: "uppercase",
+    }}
+  >
+    Auto Cash Out
+  </div>
+
+  <input
+    type="number"
+    min={1.01}
+    step="0.1"
+    placeholder="OFF"
+    value={autoCashout ?? ""}
+    disabled={!bettingOpen}
+    onChange={(e) => {
+      const value = e.target.value;
+
+      if (value === "") {
+        setAutoCashout(null);
+      } else {
+        setAutoCashout(Number(value));
+      }
+    }}
+    style={{
+      width: "100%",
+      padding: 14,
+      background: "#181818",
+      color: "#FFFFFF",
+      border: "1px solid #2A2A2A",
+      outline: "none",
+    }}
+  />
+</div>
 
           <input
             type="number"
@@ -307,6 +334,12 @@ export default function BetCard({
           disabled={!bettingOpen}
           onClick={handleBet}
         >
+          <Button
+  disabled={!bettingOpen}
+  onClick={() => setAutoCashout(null)}
+>
+  OFF
+</Button>
           {bettingOpen
             ? isDemo
               ? "PLACE DEMO BET"
