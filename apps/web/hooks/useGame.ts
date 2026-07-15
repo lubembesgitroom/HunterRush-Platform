@@ -8,6 +8,23 @@ import type {
   GameRound,
   Player,
 } from "@hunterrush/game-engine";
+import { useBet } from "@/hooks/useBet";
+import { useDemo } from "@/hooks/useDemo";
+import { calculatePayout } from "@/lib/payout";
+const {
+  activeBet,
+  createBet,
+  activateBet,
+  cashout,
+  loseBet,
+  finishRound,
+  clearBet,
+} = useBet();
+
+const {
+  isDemo,
+  increaseDemoBalance,
+} = useDemo();
 
 const socket: Socket = io(
   "http://localhost:4000",
@@ -182,15 +199,73 @@ export function useGame(): UseGameResult {
     );
 
     socket.on(
-      "multiplier:updated",
-      (
-        data: {
-          multiplier: number;
-        },
-      ) => {
-        setMultiplier(
+  "multiplier:updated",
+  (
+    data: {
+      multiplier: number;
+    },
+  ) => {
+
+    setMultiplier(
+      data.multiplier,
+    );
+
+    setSnapshot(
+      (previous) => {
+
+        if (!previous)
+          return previous;
+
+        return {
+          ...previous,
+          multiplier:
+            data.multiplier,
+        };
+
+      },
+    );
+
+    //----------------------------------
+    // AUTO CASHOUT
+    //----------------------------------
+
+    if (
+      activeBet &&
+      activeBet.status ===
+        "ACTIVE" &&
+      activeBet.autoCashout !==
+        null &&
+      data.multiplier >=
+        activeBet.autoCashout
+    ) {
+
+      const payout =
+        calculatePayout(
+          activeBet.wager,
           data.multiplier,
         );
+
+      cashout(
+        data.multiplier,
+        payout,
+      );
+
+      if (isDemo) {
+        increaseDemoBalance(
+          payout,
+        );
+      } else {
+
+        socket.emit(
+          "bet:cashout",
+        );
+
+      }
+
+    }
+
+  },
+);
 
         setSnapshot(
           (previous) => {
@@ -235,13 +310,21 @@ export function useGame(): UseGameResult {
     );
 
     socket.on(
-      "bet:accepted",
-      () => {
-        socket.emit(
-          "game:snapshot",
-        );
-      },
+  "bet:accepted",
+  (
+    data: {
+      amount: number;
+      autoCashout: number | null;
+    },
+  ) => {
+    createBet(
+      data.amount,
+      data.autoCashout,
     );
+
+    socket.emit("game:snapshot");
+  },
+);
 
     return () => {
       socket.off(

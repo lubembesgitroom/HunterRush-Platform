@@ -3,8 +3,9 @@
 import { useState } from "react";
 
 import { useGame } from "@/hooks/useGame";
-
+import { useDemo } from "@/hooks/useDemo";
 import { useHost } from "@/hooks/useHost";
+
 import Panel from "@/components/ui/Panel";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -15,36 +16,80 @@ interface BetCardProps {
   title: string;
 }
 
-const BET_CHIPS = [50, 100, 200, 500, 1000];
+const BET_CHIPS = [
+  50,
+  100,
+  200,
+  500,
+  1000,
+];
 
-const AUTO_PRESETS = [1.2, 1.5, 2, 5, 10];
+const AUTO_PRESETS = [
+  1.2,
+  1.5,
+  2,
+  5,
+  10,
+];
 
 export default function BetCard({
   title,
 }: BetCardProps) {
   const {
-    balance,
+    balance: realBalance,
     snapshot,
     placeBet,
   } = useGame();
 
   const {
-    deposit,
-  } = useHost();
+    isDemo,
+    demoBalance,
+    decreaseDemoBalance,
+  } = useDemo();
 
-  const phase = snapshot?.phase ?? "WAITING";
+  const { deposit } = useHost();
 
-  const bettingOpen = phase === "BETTING";
+  const balance = isDemo
+    ? demoBalance
+    : realBalance;
 
-  const [amount, setAmount] = useState(100);
+  const phase =
+    snapshot?.phase ??
+    "WAITING";
 
-  const [autoCashout, setAutoCashout] =
-    useState<number>(2);
+  const bettingOpen =
+    phase === "BETTING";
+
+  const [amount, setAmount] =
+    useState(100);
+
+  const [
+    autoCashout,
+    setAutoCashout,
+  ] = useState(2);
 
   function handleBet() {
     if (!bettingOpen) return;
 
-    placeBet(amount, autoCashout);
+    if (amount <= 0) return;
+
+    if (amount > balance) return;
+
+    if (isDemo) {
+      decreaseDemoBalance(amount);
+
+      console.log(
+        "Demo Bet:",
+        amount,
+      );
+
+      return;
+    }
+
+    placeBet(
+      amount,
+      autoCashout,
+    );
   }
 
   return (
@@ -56,59 +101,72 @@ export default function BetCard({
           gap: 18,
         }}
       >
-        {/* Wallet */}
-
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            justifyContent:
+              "space-between",
+            alignItems:
+              "center",
           }}
         >
-          <span
-            style={{
-              color: "#9CA3AF",
-              fontSize: 14,
-            }}
-          >
-            Wallet
-          </span>
+          <div>
+            <div
+              style={{
+                color: "#9CA3AF",
+                fontSize: 12,
+                textTransform:
+                  "uppercase",
+                letterSpacing:
+                  ".08em",
+              }}
+            >
+              Wallet
+            </div>
 
-          <strong
-            style={{
-              color: "#00E676",
-              fontSize: 18,
-            }}
+            <div
+              style={{
+                color: "#FFFFFF",
+                fontSize: 22,
+                fontWeight: 700,
+              }}
+            >
+              {formatCurrency(
+                balance,
+              )}
+            </div>
+          </div>
+
+          <Badge
+            color={
+              isDemo
+                ? "#7C3AED"
+                : "#2563EB"
+            }
           >
-            {formatCurrency(balance)}
-          </strong>
+            {isDemo
+              ? "DEMO"
+              : "REAL"}
+          </Badge>
         </div>
-{/* Deposit */}
 
-<Button
-  fullWidth
-  onClick={deposit}
-  style={{
-    background: "#2563EB",
-
-    color: "#FFFFFF",
-
-    marginTop: 6,
-
-    marginBottom: 4,
-  }}
->
-  DEPOSIT
-</Button>
-
-        {/* Bet Amount */}
+        {!isDemo && (
+          <Button
+            fullWidth
+            onClick={deposit}
+          >
+            Deposit
+          </Button>
+        )}
 
         <div>
           <div
             style={{
               color: "#9CA3AF",
               marginBottom: 8,
-              fontSize: 14,
+              fontSize: 12,
+              textTransform:
+                "uppercase",
             }}
           >
             Bet Amount
@@ -120,21 +178,24 @@ export default function BetCard({
             value={amount}
             disabled={!bettingOpen}
             onChange={(e) =>
-              setAmount(Number(e.target.value))
+              setAmount(
+                Number(
+                  e.target.value,
+                ),
+              )
             }
             style={{
               width: "100%",
               padding: 14,
-              borderRadius: 12,
-              border: "1px solid #333",
-              background: "#202020",
-              color: "#fff",
-              fontSize: 16,
+              background:
+                "#181818",
+              color: "#FFFFFF",
+              border:
+                "1px solid #2A2A2A",
+              outline: "none",
             }}
           />
         </div>
-
-        {/* Quick Bet Chips */}
 
         <div
           style={{
@@ -144,51 +205,46 @@ export default function BetCard({
             gap: 8,
           }}
         >
-          {BET_CHIPS.map((chip) => (
-            <button
-              key={chip}
-              disabled={!bettingOpen}
-              onClick={() => setAmount(chip)}
-              style={{
-                padding: 10,
-                borderRadius: 10,
-                border: "1px solid #333",
-                background: "#242424",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-            >
-              {chip}
-            </button>
-          ))}
+          {BET_CHIPS.map(
+            (chip) => (
+              <Button
+                key={chip}
+                disabled={
+                  !bettingOpen
+                }
+                onClick={() =>
+                  setAmount(
+                    chip,
+                  )
+                }
+              >
+                {chip}
+              </Button>
+            ),
+          )}
 
-          <button
+          <Button
             disabled={!bettingOpen}
             onClick={() =>
-              setAmount(Math.floor(balance))
+              setAmount(
+                Math.floor(
+                  balance,
+                ),
+              )
             }
-            style={{
-              padding: 10,
-              borderRadius: 10,
-              border: "1px solid #00C853",
-              background: "#00C853",
-              color: "#fff",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
           >
             MAX
-          </button>
+          </Button>
         </div>
-
-        {/* Auto Cash Out */}
 
         <div>
           <div
             style={{
               color: "#9CA3AF",
               marginBottom: 8,
-              fontSize: 14,
+              fontSize: 12,
+              textTransform:
+                "uppercase",
             }}
           >
             Auto Cash Out
@@ -201,22 +257,23 @@ export default function BetCard({
             disabled={!bettingOpen}
             onChange={(e) =>
               setAutoCashout(
-                Number(e.target.value),
+                Number(
+                  e.target.value,
+                ),
               )
             }
             style={{
               width: "100%",
               padding: 14,
-              borderRadius: 12,
-              border: "1px solid #333",
-              background: "#202020",
-              color: "#fff",
-              fontSize: 16,
+              background:
+                "#181818",
+              color: "#FFFFFF",
+              border:
+                "1px solid #2A2A2A",
+              outline: "none",
             }}
           />
         </div>
-
-        {/* Auto Cash Out Presets */}
 
         <div
           style={{
@@ -226,60 +283,50 @@ export default function BetCard({
             gap: 8,
           }}
         >
-          {AUTO_PRESETS.map((value) => (
-            <button
-              key={value}
-              disabled={!bettingOpen}
-              onClick={() =>
-                setAutoCashout(value)
-              }
-              style={{
-                padding: 10,
-                borderRadius: 10,
-                border: "1px solid #333",
-                background: "#242424",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-            >
-              {value}×
-            </button>
-          ))}
+          {AUTO_PRESETS.map(
+            (value) => (
+              <Button
+                key={value}
+                disabled={
+                  !bettingOpen
+                }
+                onClick={() =>
+                  setAutoCashout(
+                    value,
+                  )
+                }
+              >
+                {value}×
+              </Button>
+            ),
+          )}
         </div>
-
-        {/* Place Bet */}
 
         <Button
           fullWidth
           disabled={!bettingOpen}
           onClick={handleBet}
-          style={{
-            background: bettingOpen
-              ? "#00C853"
-              : "#555",
-            cursor: bettingOpen
-              ? "pointer"
-              : "not-allowed",
-          }}
         >
           {bettingOpen
-            ? "PLACE BET"
+            ? isDemo
+              ? "PLACE DEMO BET"
+              : "PLACE BET"
             : "BETTING CLOSED"}
         </Button>
-
-        {/* Status */}
 
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            justifyContent:
+              "space-between",
+            alignItems:
+              "center",
           }}
         >
           <span
             style={{
-              color: "#9CA3AF",
-              fontSize: 14,
+              color:
+                "#9CA3AF",
             }}
           >
             Status
@@ -288,8 +335,8 @@ export default function BetCard({
           <Badge
             color={
               bettingOpen
-                ? "#2196F3"
-                : "#757575"
+                ? "#2563EB"
+                : "#6B7280"
             }
           >
             {phase}
