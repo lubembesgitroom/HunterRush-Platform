@@ -214,32 +214,69 @@ socket.on(
       // -------------------------
 
       socket.on(
-        "bet:place",
-        (data: {
-          amount: number;
-          autoCashout: number | null;
-        }) => {
-          try {
-            const bet =
-              engine.placeBet(
-                socket.id,
-                data.amount,
-                data.autoCashout,
-              );
+  "bet:place",
+  (
+    data: {
+      amount: number;
+      autoCashout: number | null;
+    },
+  ) => {
+    try {
+      const bet = engine.placeBet(
+        socket.id,
+        data.amount,
+        data.autoCashout,
+      );
+
+      socket.emit(
+        "bet:accepted",
+        bet,
+      );
+
+      socket.emit(
+        "game:snapshot",
+        engine.getSnapshot(),
+      );
+
+      io.emit(
+        "game:snapshot",
+        engine.getSnapshot(),
+      );
+
+      console.log(
+        `💰 Bet Accepted | ${socket.id} | ${bet.amount}`,
+      );
+    } catch (error) {
+      socket.emit(
+        "bet:error",
+        {
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unable to place bet.",
+        },
+      );
+    }
+  },
+);
             socket.on(
   "bet:cashout",
   () => {
-
     try {
-
-      engine.cashout(socket.id);
-
-      socket.emit(
-        "bet:cashedout",
+      engine.cashoutBet(
+        socket.id,
       );
 
-    } catch (error) {
+      socket.emit(
+        "game:snapshot",
+        engine.getSnapshot(),
+      );
 
+      io.emit(
+        "game:snapshot",
+        engine.getSnapshot(),
+      );
+    } catch (error) {
       socket.emit(
         "bet:error",
         {
@@ -249,9 +286,7 @@ socket.on(
               : "Cashout failed.",
         },
       );
-
     }
-
   },
 );
 
