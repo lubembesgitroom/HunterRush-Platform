@@ -30,7 +30,7 @@ export default function GameCanvas() {
       <div
         style={{
           position: "relative",
-          minHeight: 460,
+          minHeight: "clamp(260px,55vh,460px)",
           borderRadius: 18,
 
           background:
@@ -44,7 +44,7 @@ export default function GameCanvas() {
 
           justifyContent: "space-between",
 
-          padding: 32,
+          padding: "clamp(16px,2vw,32px)",
         }}
       >
         {/* Top Bar */}
@@ -66,7 +66,9 @@ export default function GameCanvas() {
             style={{
               color: "#9CA3AF",
 
-              fontSize: 14,
+              fontSize: 12,
+              flexWrap: "wrap",
+              gap: 8,
             }}
           >
             Round{" "}
@@ -93,7 +95,7 @@ export default function GameCanvas() {
         >
           <div
             style={{
-              fontSize: 96,
+              fontSize: "clamp(48px,8vw,96px)",
 
               fontWeight: 900,
 
@@ -115,11 +117,11 @@ export default function GameCanvas() {
 
           <div
             style={{
-              marginTop: 24,
+              marginTop: 16,
 
-              width: 180,
+              width: "clamp(100px,18vw,180px)",
 
-              height: 180,
+              height: "clamp(100px,18vw,180px)",
 
               borderRadius: "50%",
 
@@ -156,7 +158,9 @@ export default function GameCanvas() {
 
             color: "#9CA3AF",
 
-            fontSize: 14,
+            fontSize: 12,
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
           <span>
