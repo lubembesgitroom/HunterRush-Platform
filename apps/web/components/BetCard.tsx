@@ -107,11 +107,14 @@ const canCashout =
   return (
     <Panel title={title}>
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 18,
-        }}
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: 18,
+    width: "100%",
+    minWidth: 0,
+  }}
+>
       >
         <div
           style={{
@@ -197,15 +200,16 @@ const canCashout =
               )
             }
             style={{
-              width: "100%",
-              padding: 14,
-              background:
-                "#181818",
-              color: "#FFFFFF",
-              border:
-                "1px solid #2A2A2A",
-              outline: "none",
-            }}
+  width: "100%",
+  padding: 14,
+  background: "#181818",
+  color: "#FFFFFF",
+  border: "1px solid #2A2A2A",
+  outline: "none",
+  boxSizing: "border-box",
+  fontSize: 16,
+  borderRadius: 10,
+}}
           />
         </div>
 
@@ -358,13 +362,16 @@ const canCashout =
       }
     }}
     style={{
-      width: "100%",
-      padding: 14,
-      background: "#181818",
-      color: "#FFFFFF",
-      border: "1px solid #2A2A2A",
-      outline: "none",
-    }}
+  width: "100%",
+  padding: 14,
+  background: "#181818",
+  color: "#FFFFFF",
+  border: "1px solid #2A2A2A",
+  outline: "none",
+  boxSizing: "border-box",
+  fontSize: 16,
+  borderRadius: 10,
+}}
   />
 </div>
 
