@@ -24,9 +24,9 @@ export default function Home() {
 
       <div
         style={{
-          maxWidth: 1400,
+          maxWidth: 1280,
           margin: "0 auto",
-          padding: 24,
+          padding: "16px",
 
           display: "flex",
           flexDirection: "column",
@@ -48,7 +48,7 @@ export default function Home() {
             display: "grid",
 
             gridTemplateColumns:
-              "1fr 1fr 1fr",
+  "repeat(auto-fit,minmax(320px,1fr))",
 
             gap: 20,
           }}
