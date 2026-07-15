@@ -12,13 +12,9 @@ export type BetStatus =
 
 export interface ActiveBet {
   wager: number;
-
   autoCashout: number | null;
-
   payout: number;
-
   cashoutMultiplier: number | null;
-
   status: BetStatus;
 }
 
@@ -49,27 +45,22 @@ export const useBetStore =
     activeBet: null,
 
     createBet: (
-      wager,
-      autoCashout,
+      wager: number,
+      autoCashout: number | null,
     ) =>
       set({
         activeBet: {
           wager,
-
           autoCashout,
-
           payout: 0,
-
           cashoutMultiplier: null,
-
           status: "PENDING",
         },
       }),
 
     activateBet: () =>
       set((state) => {
-        if (!state.activeBet)
-          return state;
+        if (!state.activeBet) return state;
 
         return {
           activeBet: {
@@ -80,29 +71,25 @@ export const useBetStore =
       }),
 
     cashout: (
-      multiplier,
-      payout,
+      multiplier: number,
+      payout: number,
     ) =>
       set((state) => {
-        if (!state.activeBet)
-          return state;
+        if (!state.activeBet) return state;
 
         return {
           activeBet: {
             ...state.activeBet,
             payout,
-            cashoutMultiplier:
-              multiplier,
-            status:
-              "CASHED_OUT",
+            cashoutMultiplier: multiplier,
+            status: "CASHED_OUT",
           },
         };
       }),
 
     loseBet: () =>
       set((state) => {
-        if (!state.activeBet)
-          return state;
+        if (!state.activeBet) return state;
 
         return {
           activeBet: {
@@ -114,14 +101,12 @@ export const useBetStore =
 
     finishRound: () =>
       set((state) => {
-        if (!state.activeBet)
-          return state;
+        if (!state.activeBet) return state;
 
         return {
           activeBet: {
             ...state.activeBet,
-            status:
-              "FINISHED",
+            status: "FINISHED",
           },
         };
       }),
