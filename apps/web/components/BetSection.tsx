@@ -6,16 +6,15 @@ export default function BetSection() {
   return (
     <section
       style={{
+        width: "100%",
         display: "grid",
         gridTemplateColumns:
-          "repeat(auto-fit, minmax(340px, 1fr))",
-        gap: 20,
-        width: "100%",
+          "repeat(auto-fit, minmax(300px, 1fr))",
+        gap: 16,
+        alignItems: "start",
       }}
     >
-      <BetCard title="Bet 1" />
-
-      <BetCard title="Bet 2" />
+      <BetCard title="Bet" />
     </section>
   );
 }
