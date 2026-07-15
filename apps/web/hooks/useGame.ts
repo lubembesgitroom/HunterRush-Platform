@@ -61,12 +61,23 @@ export interface UseGameResult {
 
   roundHash: string;
 
+  cashout: () => void;
+
   placeBet: (
     amount: number,
     autoCashout: number | null,
   ) => void;
 
   cashOut: () => void;
+}
+function cashout(): void {
+
+  if (!connected) return;
+
+  socket.emit(
+    "bet:cashout",
+  );
+
 }
 
 export function useGame(): UseGameResult {
@@ -463,28 +474,24 @@ export function useGame(): UseGameResult {
       "bet:cashout",
     );
 
-  }
-
   return {
 
-    socket,
+  socket,
 
-    connected,
+  connected,
 
-    player,
+  player,
 
-    balance,
+  balance,
 
-    snapshot,
+  snapshot,
 
-    multiplier,
+  multiplier,
 
-    roundHash,
+  roundHash,
 
-    placeBet,
+  placeBet,
 
-    cashOut,
+  cashout,
 
-  };
-
-}
+};
