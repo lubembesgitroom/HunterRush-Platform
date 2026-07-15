@@ -77,28 +77,32 @@ const canCashout =
   useState<number | null>(null);
 
   function handleBet() {
-    if (!bettingOpen) return;
+  if (!bettingOpen) return;
 
-    if (amount <= 0) return;
+  if (amount <= 0) return;
 
-    if (amount > balance) return;
+  if (amount > balance) return;
 
-    if (isDemo) {
-      decreaseDemoBalance(amount);
-
-      console.log(
-        "Demo Bet:",
-        amount,
-      );
-
-      return;
-    }
+  if (isDemo) {
+    decreaseDemoBalance(amount);
 
     placeBet(
       amount,
-      autoCashout,
+      autoCashout > 1
+        ? autoCashout
+        : null,
     );
+
+    return;
   }
+
+  placeBet(
+    amount,
+    autoCashout > 1
+      ? autoCashout
+      : null,
+  );
+}
 
   return (
     <Panel title={title}>
