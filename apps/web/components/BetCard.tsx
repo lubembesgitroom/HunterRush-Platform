@@ -62,6 +62,13 @@ export default function BetCard({
 
   const bettingOpen =
     phase === "BETTING";
+  const hasActiveBet =
+  activeBet &&
+  (activeBet.status === "ACTIVE" ||
+    activeBet.status === "PENDING");
+
+const canCashout =
+  activeBet?.status === "ACTIVE";
 
   const [amount, setAmount] =
     useState(100);
@@ -225,18 +232,98 @@ export default function BetCard({
           )}
 
           <Button
-            disabled={!bettingOpen}
-            onClick={() =>
-              setAmount(
-                Math.floor(
-                  balance,
-                ),
-              )
-            }
-          >
-            MAX
-          </Button>
+  fullWidth
+  disabled={!bettingOpen || !!hasActiveBet}
+  onClick={handleBet}
+>
+  {hasActiveBet
+    ? "BET PLACED"
+    : bettingOpen
+      ? isDemo
+        ? "PLACE DEMO BET"
+        : "PLACE BET"
+      : "BETTING CLOSED"}
+</Button>
+          {activeBet && (
+  <Panel>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <span>Stake</span>
+
+        <strong>
+          {formatCurrency(activeBet.wager)}
+        </strong>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <span>Status</span>
+
+        <Badge color="#22C55E">
+          {activeBet.status}
+        </Badge>
+      </div>
+
+      {activeBet.status === "ACTIVE" && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>Current</span>
+
+          <strong>
+            {snapshot?.multiplier.toFixed(2)}×
+          </strong>
         </div>
+      )}
+
+      {activeBet.status === "CASHED_OUT" && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <span>Payout</span>
+
+          <strong
+            style={{
+              color: "#22C55E",
+            }}
+          >
+            {formatCurrency(activeBet.payout)}
+          </strong>
+        </div>
+      )}
+
+      {canCashout && (
+        <Button
+          fullWidth
+          onClick={cashout}
+        >
+          CASH OUT
+        </Button>
+      )}
+    </div>
+  </Panel>
+)}
 
         <div>
   <div
