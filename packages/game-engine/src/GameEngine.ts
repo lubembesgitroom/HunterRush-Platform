@@ -119,6 +119,68 @@ private totalWagered = 0;
       this.players.getPlayer(
         playerId,
       );
+    public cashout(playerId: string): void {
+
+  const round = this.rounds.getCurrent();
+
+  if (!round) {
+    throw new Error("No active round.");
+  }
+
+  if (this.phases.current() !== "RUNNING") {
+    throw new Error("Round is not running.");
+  }
+
+  const bets =
+    this.bets.getRoundBets(round.id);
+
+  const bet =
+    bets.find(
+      (b) =>
+        b.playerId === playerId &&
+        b.status === "active",
+    );
+
+  if (!bet) {
+    throw new Error("No active bet.");
+  }
+
+  const result =
+    this.cashouts.cashout(
+      bet,
+      this.currentMultiplier,
+    );
+
+  if (!result) {
+    throw new Error("Unable to cash out.");
+  }
+
+  this.players.credit(
+    playerId,
+    result.payout,
+  );
+
+  const player =
+    this.players.getPlayer(playerId);
+
+  if (player) {
+
+    this.events.emitEvent(
+      GameEvents.BALANCE_UPDATED,
+      {
+        playerId,
+        balance: player.balance,
+      },
+    );
+
+  }
+
+  this.events.emitEvent(
+    GameEvents.PLAYER_CASHED_OUT,
+    result,
+  );
+
+}
 
     if (!player) {
       throw new Error(
