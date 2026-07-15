@@ -3,28 +3,15 @@
 import { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
+import {
+  useBetStore,
+} from "@/store/betStore";
+
 import type {
   Bet,
   GameRound,
   Player,
 } from "@hunterrush/game-engine";
-import { useBet } from "@/hooks/useBet";
-import { useDemo } from "@/hooks/useDemo";
-import { calculatePayout } from "@/lib/payout";
-const {
-  activeBet,
-  createBet,
-  activateBet,
-  cashout,
-  loseBet,
-  finishRound,
-  clearBet,
-} = useBet();
-
-const {
-  isDemo,
-  increaseDemoBalance,
-} = useDemo();
 
 const socket: Socket = io(
   "http://localhost:4000",
@@ -78,9 +65,12 @@ export interface UseGameResult {
     amount: number,
     autoCashout: number | null,
   ) => void;
+
+  cashOut: () => void;
 }
 
 export function useGame(): UseGameResult {
+
   const [connected, setConnected] =
     useState(false);
 
@@ -91,9 +81,7 @@ export function useGame(): UseGameResult {
     useState(1000);
 
   const [snapshot, setSnapshot] =
-    useState<GameSnapshot | null>(
-      null,
-    );
+    useState<GameSnapshot | null>(null);
 
   const [multiplier, setMultiplier] =
     useState(1);
@@ -101,8 +89,53 @@ export function useGame(): UseGameResult {
   const [roundHash, setRoundHash] =
     useState("");
 
+  //----------------------------------
+  // Bet Store
+  //----------------------------------
+
+  const activeBet =
+    useBetStore(
+      (state) => state.activeBet,
+    );
+
+  const createBet =
+    useBetStore(
+      (state) => state.createBet,
+    );
+
+  const activateBet =
+    useBetStore(
+      (state) => state.activateBet,
+    );
+
+  const cashout =
+    useBetStore(
+      (state) => state.cashout,
+    );
+
+  const loseBet =
+    useBetStore(
+      (state) => state.loseBet,
+    );
+
+  const finishRound =
+    useBetStore(
+      (state) => state.finishRound,
+    );
+
+  const clearBet =
+    useBetStore(
+      (state) => state.clearBet,
+    );
+
+  //----------------------------------
+  // Socket Events
+  //----------------------------------
+
   useEffect(() => {
+
     function onConnect() {
+
       setConnected(true);
 
       socket.emit(
@@ -116,12 +149,15 @@ export function useGame(): UseGameResult {
       socket.emit(
         "game:snapshot",
       );
+
     }
 
     function onDisconnect() {
+
       setConnected(false);
 
       setPlayer(null);
+
     }
 
     socket.on(
@@ -134,31 +170,49 @@ export function useGame(): UseGameResult {
       onDisconnect,
     );
 
+    //----------------------------------
+    // Player
+    //----------------------------------
+
     socket.on(
       "player:welcome",
-      (
-        incoming: Player,
-      ) => {
-        setPlayer(incoming);
+      (incoming: Player) => {
+
+        setPlayer(
+          incoming,
+        );
 
         setBalance(
           incoming.balance,
         );
+
       },
     );
+
+    //----------------------------------
+    // Snapshot
+    //----------------------------------
 
     socket.on(
       "game:snapshot",
       (
-        state: GameSnapshot,
+        incoming: GameSnapshot,
       ) => {
-        setSnapshot(state);
+
+        setSnapshot(
+          incoming,
+        );
 
         setMultiplier(
-          state.multiplier,
+          incoming.multiplier,
         );
+
       },
     );
+
+    //----------------------------------
+    // Wallet
+    //----------------------------------
 
     socket.on(
       "wallet:balance",
@@ -168,10 +222,13 @@ export function useGame(): UseGameResult {
           balance: number;
         },
       ) => {
+
         if (
           player &&
-          data.playerId === player.id
+          player.id ===
+            data.playerId
         ) {
+
           setBalance(
             data.balance,
           );
@@ -181,9 +238,15 @@ export function useGame(): UseGameResult {
             balance:
               data.balance,
           });
+
         }
+
       },
     );
+
+    //----------------------------------
+    // Round Hash
+    //----------------------------------
 
     socket.on(
       "round:hash",
@@ -192,208 +255,193 @@ export function useGame(): UseGameResult {
           hash: string;
         },
       ) => {
+
         setRoundHash(
           data.hash,
         );
+
       },
     );
+
+    //----------------------------------
+    // Betting Open
+    //----------------------------------
 
     socket.on(
-  "multiplier:updated",
-  (
-    data: {
-      multiplier: number;
-    },
-  ) => {
+      "betting:opened",
+      () => {
 
-    setMultiplier(
-      data.multiplier,
-    );
-
-    setSnapshot(
-      (previous) => {
-
-        if (!previous)
-          return previous;
-
-        return {
-          ...previous,
-          multiplier:
-            data.multiplier,
-        };
+        clearBet();
 
       },
     );
 
     //----------------------------------
-    // AUTO CASHOUT
+    // Round Started
     //----------------------------------
 
-    if (
-      activeBet &&
-      activeBet.status ===
-        "ACTIVE" &&
-      activeBet.autoCashout !==
-        null &&
-      data.multiplier >=
-        activeBet.autoCashout
-    ) {
+    socket.on(
+      "round:started",
+      () => {
 
-      const payout =
-        calculatePayout(
-          activeBet.wager,
+        activateBet();
+
+      },
+    );
+
+    //----------------------------------
+    // Multiplier
+    //----------------------------------
+
+    socket.on(
+      "multiplier:updated",
+      (
+        data: {
+          multiplier: number;
+        },
+      ) => {
+
+        setMultiplier(
           data.multiplier,
         );
 
-      cashout(
-        data.multiplier,
-        payout,
-      );
-
-      if (isDemo) {
-        increaseDemoBalance(
-          payout,
-        );
-      } else {
-
-        socket.emit(
-          "bet:cashout",
-        );
-
-      }
-
-    }
-
-  },
-);
-
         setSnapshot(
           (previous) => {
-            if (!previous) {
+
+            if (!previous)
               return previous;
-            }
 
             return {
               ...previous,
               multiplier:
                 data.multiplier,
             };
+
           },
         );
+
       },
+    );
+
+    //----------------------------------
+    // Cashout
+    //----------------------------------
+
+    socket.on(
+      "player:cashedout",
+      (
+        data: {
+          payout: number;
+          multiplier: number;
+        },
+      ) => {
+
+        cashout(
+          data.multiplier,
+          data.payout,
+        );
+
+      },
+    );
+
+    //----------------------------------
+    // Crash
+    //----------------------------------
+
+    socket.on(
+      "round:crashed",
+      () => {
+
+        if (
+          activeBet &&
+          activeBet.status ===
+            "ACTIVE"
+        ) {
+
+          loseBet();
+
+        }
+
+      },
+    );
+
+    //----------------------------------
+    // Reveal
+    //----------------------------------
+
+    socket.on(
+      "round:revealed",
+      () => {
+
+        finishRound();
+
+      },
+    );
+
+    //----------------------------------
+    // Bet Accepted
+    //----------------------------------
+
+    socket.on(
+      "bet:accepted",
+      () => {
+
+        socket.emit(
+          "game:snapshot",
+        );
+
+      },
+    );
+
+    //----------------------------------
+    // Errors
+    //----------------------------------
+
+    socket.on(
+      "bet:error",
+      console.error,
     );
 
     socket.on(
       "player:error",
-      (
-        error: {
-          message: string;
-        },
-      ) => {
-        console.error(
-          error.message,
-        );
-      },
+      console.error,
     );
-
-    socket.on(
-      "bet:error",
-      (
-        error: {
-          message: string;
-        },
-      ) => {
-        console.error(
-          error.message,
-        );
-      },
-    );
-
-    socket.on(
-  "bet:accepted",
-  (
-    data: {
-      amount: number;
-      autoCashout: number | null;
-    },
-  ) => {
-    createBet(
-      data.amount,
-      data.autoCashout,
-    );
-
-    socket.emit("game:snapshot");
-  },
-);
 
     return () => {
-      socket.off(
-        "connect",
-        onConnect,
-      );
 
-      socket.off(
-        "disconnect",
-        onDisconnect,
-      );
+      socket.removeAllListeners();
 
-      socket.removeAllListeners(
-        "player:welcome",
-      );
-
-      socket.removeAllListeners(
-        "game:snapshot",
-      );
-
-      socket.removeAllListeners(
-        "wallet:balance",
-      );
-
-      socket.removeAllListeners(
-        "round:hash",
-      );
-
-      socket.removeAllListeners(
-        "multiplier:updated",
-      );
-
-      socket.removeAllListeners(
-        "player:error",
-      );
-
-      socket.removeAllListeners(
-        "bet:error",
-      );
-
-      socket.removeAllListeners(
-        "bet:accepted",
-      );
     };
-  }, [player]);
-    function placeBet(
+
+  }, [
+    player,
+    activeBet,
+    activateBet,
+    cashout,
+    loseBet,
+    finishRound,
+    clearBet,
+  ]);
+
+  //----------------------------------
+  // Place Bet
+  //----------------------------------
+
+  function placeBet(
     amount: number,
     autoCashout: number | null,
-  ): void {
-    if (!connected) {
-      console.warn(
-        "Socket is not connected.",
-      );
-      return;
-    }
+  ) {
 
-    if (!player) {
-      console.warn(
-        "Player not connected.",
-      );
+    if (!connected)
       return;
-    }
 
-    if (amount <= 0) {
-      console.warn(
-        "Invalid bet amount.",
-      );
+    if (!player)
       return;
-    }
+
+    createBet(
+      amount,
+      autoCashout,
+    );
 
     socket.emit(
       "bet:place",
@@ -402,9 +450,23 @@ export function useGame(): UseGameResult {
         autoCashout,
       },
     );
+
+  }
+
+  //----------------------------------
+  // Manual Cashout
+  //----------------------------------
+
+  function cashOut() {
+
+    socket.emit(
+      "bet:cashout",
+    );
+
   }
 
   return {
+
     socket,
 
     connected,
@@ -420,5 +482,9 @@ export function useGame(): UseGameResult {
     roundHash,
 
     placeBet,
+
+    cashOut,
+
   };
+
 }
