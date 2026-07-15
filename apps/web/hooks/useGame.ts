@@ -177,21 +177,29 @@ export function useGame(): UseGameResult {
     );
 
     socket.on(
-      "bet:accepted",
-      (bet: Bet) => {
-        createBet(
-          bet.amount,
-          bet.autoCashout,
-        );
-      },
+  "bet:accepted",
+  (bet: Bet) => {
+    createBet(
+      bet.amount,
+      bet.autoCashout,
     );
 
-    socket.on(
-      "round:started",
-      () => {
-        activateBet();
-      },
+    socket.emit(
+      "game:snapshot",
     );
+  },
+);
+
+    socket.on(
+  "round:started",
+  () => {
+    activateBet();
+
+    socket.emit(
+      "game:snapshot",
+    );
+  },
+);
 
     socket.on(
       "player:cashedout",
@@ -207,22 +215,17 @@ export function useGame(): UseGameResult {
     );
 
     socket.on(
-      "round:crashed",
-      () => {
-        loseBet();
-      },
-    );
+  "round:crashed",
+  () => {
+    loseBet();
 
-    socket.on(
-      "round:revealed",
-      () => {
-        finishRound();
-
-        setTimeout(() => {
-          clearBet();
-        }, 1000);
-      },
+    socket.emit(
+      "game:snapshot",
     );
+  },
+);
+
+    
 
     socket.on(
       "player:error",
@@ -249,22 +252,33 @@ export function useGame(): UseGameResult {
     };
   }, []);
 
-  function placeBet(
-    amount: number,
-    autoCashout: number | null,
+   function placeBet(
+  amount: number,
+  autoCashout: number | null,
+) {
+  if (!connected) return;
+
+  if (!player) return;
+
+  if (
+    snapshot?.phase !== "BETTING"
   ) {
-    socket.emit(
-      "bet:place",
-      {
-        amount,
-        autoCashout,
-      },
-    );
+    return;
   }
 
+  socket.emit("bet:place", {
+    amount,
+    autoCashout,
+  });
+}
+
   function cashout() {
-    socket.emit("bet:cashout");
-  }
+  if (!connected) return;
+
+  if (!player) return;
+
+  socket.emit("bet:cashout");
+}
 
   return {
     socket,
