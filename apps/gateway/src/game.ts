@@ -226,6 +226,34 @@ socket.on(
                 data.amount,
                 data.autoCashout,
               );
+            socket.on(
+  "bet:cashout",
+  () => {
+
+    try {
+
+      engine.cashout(socket.id);
+
+      socket.emit(
+        "bet:cashedout",
+      );
+
+    } catch (error) {
+
+      socket.emit(
+        "bet:error",
+        {
+          message:
+            error instanceof Error
+              ? error.message
+              : "Cashout failed.",
+        },
+      );
+
+    }
+
+  },
+);
 
             socket.emit(
               "bet:accepted",
