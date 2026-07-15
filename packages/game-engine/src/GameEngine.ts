@@ -146,10 +146,10 @@ private totalWagered = 0;
   }
 
   const result =
-    this.cashouts.cashout(
-      bet,
-      this.currentMultiplier,
-    );
+  this.cashouts.manualCashout(
+    bet,
+    this.currentMultiplier,
+  );
 
   if (!result) {
     throw new Error("Unable to cash out.");
