@@ -1,3 +1,5 @@
+// packages/game-engine/src/BetManager.ts
+
 export type BetStatus =
   | "pending"
   | "active"
@@ -9,6 +11,7 @@ export interface Bet {
   id: string;
   playerId: string;
   roundId: string;
+  panelId?: number;
   amount: number;
   autoCashout: number | null;
   status: BetStatus;
@@ -19,86 +22,108 @@ export interface Bet {
 export class BetManager {
   private readonly bets = new Map<string, Bet[]>();
 
-  placeBet(bet: Bet): boolean {
-    const playerBets =
-      this.bets.get(bet.playerId) ?? [];
+  // ======================================================
+  // Helpers
+  // ======================================================
 
-    const roundBets = playerBets.filter(
+  private getPlayerBetArray(playerId: string): Bet[] {
+    let playerBets = this.bets.get(playerId);
+
+    if (!playerBets) {
+      playerBets = [];
+      this.bets.set(playerId, playerBets);
+    }
+
+    return playerBets;
+  }
+
+  // ======================================================
+  // Place Bet
+  // ======================================================
+
+  public placeBet(bet: Bet): boolean {
+    const playerBets = this.getPlayerBetArray(
+      bet.playerId,
+    );
+
+    const betsThisRound = playerBets.filter(
       (b) =>
         b.roundId === bet.roundId &&
         b.status !== "cancelled",
     );
 
-    if (roundBets.length >= 2) {
+    const existingPanelBet = betsThisRound.find(
+      (b) =>
+        b.panelId === bet.panelId &&
+        b.status !== "cancelled",
+    );
+
+    if (existingPanelBet) {
+      return false;
+    }
+
+    // Maximum 2 bets per round
+    if (betsThisRound.length >= 2) {
       return false;
     }
 
     playerBets.push(bet);
 
-    this.bets.set(
-      bet.playerId,
-      playerBets,
-    );
-
     return true;
   }
 
-  getPlayerBets(
+  // ======================================================
+  // Queries
+  // ======================================================
+
+  public getPlayerBets(
     playerId: string,
   ): Bet[] {
-    return [
-      ...(this.bets.get(playerId) ?? []),
-    ];
+    return [...this.getPlayerBetArray(playerId)];
   }
 
-  getRoundBets(
+  public getRoundBets(
     roundId: string,
   ): Bet[] {
-    const bets: Bet[] = [];
+    const result: Bet[] = [];
 
     for (const playerBets of this.bets.values()) {
-      for (const bet of playerBets) {
-        if (bet.roundId === roundId) {
-          bets.push(bet);
-        }
-      }
+      result.push(
+        ...playerBets.filter(
+          (bet) => bet.roundId === roundId,
+        ),
+      );
     }
 
-    return bets;
+    return result;
   }
 
-  getBet(
+  public getBet(
     playerId: string,
     betId: string,
   ): Bet | undefined {
-    return this.bets
-      .get(playerId)
-      ?.find((bet) => bet.id === betId);
-  }
-
-  cancelBet(
-    playerId: string,
-    betId: string,
-  ): boolean {
-    const bet = this.getBet(
-      playerId,
-      betId,
+    return this.getPlayerBetArray(playerId).find(
+      (bet) => bet.id === betId,
     );
-
-    if (!bet) {
-      return false;
-    }
-
-    if (bet.status !== "pending") {
-      return false;
-    }
-
-    bet.status = "cancelled";
-
-    return true;
   }
 
-  activateRound(
+  public playerHasActiveBet(
+    playerId: string,
+    roundId: string,
+  ): boolean {
+    return this.getPlayerBetArray(playerId).some(
+      (bet) =>
+        bet.roundId === roundId &&
+        (bet.status === "pending" ||
+          bet.status === "active"),
+    );
+  }
+
+  // ======================================================
+  // State Changes
+  // ======================================================
+
+  public activateRound(
     roundId: string,
   ): void {
     for (const playerBets of this.bets.values()) {
@@ -113,21 +138,29 @@ export class BetManager {
     }
   }
 
-  cashoutBet(
+  public cancelBet(
+    playerId: string,
+    betId: string,
+  ): boolean {
+    const bet = this.getBet(playerId, betId);
+
+    if (!bet || bet.status !== "pending") {
+      return false;
+    }
+
+    bet.status = "cancelled";
+
+    return true;
+  }
+
+  public cashoutBet(
     playerId: string,
     betId: string,
     payout: number,
   ): Bet | undefined {
-    const bet = this.getBet(
-      playerId,
-      betId,
-    );
+    const bet = this.getBet(playerId, betId);
 
-    if (!bet) {
-      return undefined;
-    }
-
-    if (bet.status !== "active") {
+    if (!bet || bet.status !== "active") {
       return undefined;
     }
 
@@ -137,7 +170,7 @@ export class BetManager {
     return bet;
   }
 
-  markLost(
+  public markLost(
     roundId: string,
   ): void {
     for (const playerBets of this.bets.values()) {
@@ -152,45 +185,30 @@ export class BetManager {
     }
   }
 
-  clearRound(
+  // ======================================================
+  // Cleanup
+  // ======================================================
+
+  public clearRound(
     roundId: string,
   ): void {
     for (const [
       playerId,
       playerBets,
-    ] of this.bets) {
-      const remaining =
-        playerBets.filter(
-          (bet) =>
-            bet.roundId !== roundId,
-        );
+    ] of this.bets.entries()) {
+      const remaining = playerBets.filter(
+        (bet) => bet.roundId !== roundId,
+      );
 
       if (remaining.length === 0) {
         this.bets.delete(playerId);
       } else {
-        this.bets.set(
-          playerId,
-          remaining,
-        );
+        this.bets.set(playerId, remaining);
       }
     }
   }
 
-  playerHasActiveBet(
-    playerId: string,
-    roundId: string,
-  ): boolean {
-    return this.getPlayerBets(
-      playerId,
-    ).some(
-      (bet) =>
-        bet.roundId === roundId &&
-        (bet.status === "pending" ||
-          bet.status === "active"),
-    );
-  }
-
-  clear(): void {
+  public clear(): void {
     this.bets.clear();
   }
 }

@@ -31,7 +31,7 @@ interface DemoStore {
 }
 
 const DEFAULT_DEMO_BALANCE =
-  10000;
+  50000;
 
 export const useDemoStore =
   create<DemoStore>(

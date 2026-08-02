@@ -1,3 +1,5 @@
+// packages/game-engine/src/PlayerManager.ts
+
 export interface Player {
   id: string;
   username: string;
@@ -9,19 +11,20 @@ export interface Player {
 export class PlayerManager {
   private readonly players = new Map<string, Player>();
 
-  /**
-   * Registers a new player.
-   * Returns the existing player if already registered.
-   */
-  addPlayer(
+  // ======================================================
+  // Player Lifecycle
+  // ======================================================
+
+  public addPlayer(
     id: string,
     username: string,
-    balance = 1000,
+    balance = 50000,
   ): Player {
     const existing = this.players.get(id);
 
     if (existing) {
       existing.connected = true;
+      existing.username = username;
       return existing;
     }
 
@@ -38,10 +41,7 @@ export class PlayerManager {
     return player;
   }
 
-  /**
-   * Disconnects a player without deleting their record.
-   */
-  disconnectPlayer(id: string): boolean {
+  public disconnectPlayer(id: string): boolean {
     const player = this.players.get(id);
 
     if (!player) {
@@ -53,61 +53,55 @@ export class PlayerManager {
     return true;
   }
 
-  /**
-   * Permanently removes a player.
-   */
-  removePlayer(id: string): boolean {
+  public removePlayer(id: string): boolean {
     return this.players.delete(id);
   }
 
-  /**
-   * Gets one player.
-   */
-  getPlayer(id: string): Player | undefined {
+  // ======================================================
+  // Queries
+  // ======================================================
+
+  public getPlayer(
+    id: string,
+  ): Player | undefined {
     return this.players.get(id);
   }
 
-  /**
-   * Returns all players.
-   */
-  getPlayers(): Player[] {
+  public getPlayers(): Player[] {
     return [...this.players.values()];
   }
 
-  /**
-   * Returns only connected players.
-   */
-  getConnectedPlayers(): Player[] {
-    return this.getPlayers().filter(
+  public getConnectedPlayers(): Player[] {
+    return [...this.players.values()].filter(
       (player) => player.connected,
     );
   }
 
-  /**
-   * Checks whether a player exists.
-   */
-  hasPlayer(id: string): boolean {
+  public hasPlayer(id: string): boolean {
     return this.players.has(id);
   }
 
-  /**
-   * Number of registered players.
-   */
-  count(): number {
+  public count(): number {
     return this.players.size;
   }
 
-  /**
-   * Number of connected players.
-   */
-  connectedCount(): number {
-    return this.getConnectedPlayers().length;
+  public connectedCount(): number {
+    let count = 0;
+
+    for (const player of this.players.values()) {
+      if (player.connected) {
+        count++;
+      }
+    }
+
+    return count;
   }
 
-  /**
-   * Updates a player's balance.
-   */
-  updateBalance(
+  // ======================================================
+  // Wallet
+  // ======================================================
+
+  public updateBalance(
     id: string,
     balance: number,
   ): Player | undefined {
@@ -122,10 +116,7 @@ export class PlayerManager {
     return player;
   }
 
-  /**
-   * Credits a player's wallet.
-   */
-  credit(
+  public credit(
     id: string,
     amount: number,
   ): Player | undefined {
@@ -140,17 +131,17 @@ export class PlayerManager {
     return player;
   }
 
-  /**
-   * Debits a player's wallet.
-   * Returns undefined if insufficient funds.
-   */
-  debit(
+  public debit(
     id: string,
     amount: number,
   ): Player | undefined {
     const player = this.players.get(id);
 
     if (!player) {
+      return undefined;
+    }
+
+    if (amount <= 0) {
       return undefined;
     }
 
@@ -163,10 +154,11 @@ export class PlayerManager {
     return player;
   }
 
-  /**
-   * Removes all players.
-   */
-  clear(): void {
+  // ======================================================
+  // Maintenance
+  // ======================================================
+
+  public clear(): void {
     this.players.clear();
   }
 }

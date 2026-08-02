@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
 import { useGame } from "@/hooks/useGame";
 
 import { theme } from "@/theme/theme";
@@ -11,33 +9,13 @@ export default function CountdownOverlay() {
   const { snapshot } = useGame();
 
   const phase = snapshot?.phase ?? "WAITING";
+  const serverCountdownMs = snapshot?.countdownMs ?? 0;
+  const countdownSeconds = Math.max(
+    0,
+    Math.ceil(serverCountdownMs / 1000),
+  );
 
-  // Temporary client countdown.
-  // Later this will come from the server snapshot.
-  const [countdown, setCountdown] = useState(8);
-
-  useEffect(() => {
-    if (phase !== "BETTING") {
-      return;
-    }
-
-    setCountdown(8);
-
-    const timer = setInterval(() => {
-      setCountdown((current) => {
-        if (current <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-
-        return current - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [phase]);
-
-  if (phase !== "BETTING") {
+  if (phase !== "BETTING" && phase !== "WAITING") {
     return null;
   }
 
@@ -78,7 +56,9 @@ export default function CountdownOverlay() {
           marginBottom: 12,
         }}
       >
-        Round Starts In
+        {phase === "WAITING"
+          ? "Preparing Next Round"
+          : "Round Starts In"}
       </div>
 
       <div
@@ -110,7 +90,7 @@ export default function CountdownOverlay() {
           transition: "all .25s ease",
         }}
       >
-        {countdown}
+        {countdownSeconds}
       </div>
     </div>
   );

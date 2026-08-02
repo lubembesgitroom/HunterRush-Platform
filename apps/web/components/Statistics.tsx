@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import Panel from "@/components/ui/Panel";
 
 import { useGame } from "@/hooks/useGame";
@@ -82,9 +84,14 @@ export default function Statistics() {
   const watchingNow =
     1800 + playersOnline * 12;
 
-  const roundsToday =
-    145000 +
-    (Math.floor(Date.now() / 60000) % 5000);
+  const [roundsToday, setRoundsToday] = useState(145000);
+
+  useEffect(() => {
+    setRoundsToday(
+      145000 +
+        (Math.floor(Date.now() / 60000) % 5000),
+    );
+  }, []);
 
   return (
     <Panel title="Statistics">

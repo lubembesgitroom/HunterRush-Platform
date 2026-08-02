@@ -2,7 +2,7 @@ import Header from "@/components/layout/Header";
 
 import GameCanvas from "@/components/GameCanvas";
 import BetSection from "@/components/BetSection";
-
+import RoundHistoryStrip from "@/components/RoundHistoryStrip";
 import RoundHistory from "@/components/RoundHistory";
 import LiveBets from "@/components/LiveBets";
 import Statistics from "@/components/Statistics";
@@ -11,9 +11,24 @@ export default function Home() {
   return (
     <main
       style={{
+        width: "100%",
+        maxWidth: 1500,
+        margin: "0 auto",
+        padding: 10,
+
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+
+        background: "#16202c",
         minHeight: "100vh",
-        background: "#0f0f0f",
+
+        fontFamily:
+          'Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif',
+
         color: "#ffffff",
+
+        boxSizing: "border-box",
       }}
     >
       {/* Header */}
@@ -33,32 +48,25 @@ export default function Home() {
           gap: 24,
         }}
       >
-        {/* Game Canvas */}
+        <RoundHistoryStrip />
 
         <GameCanvas />
-
-        {/* Betting */}
 
         <BetSection />
 
         {/* Dashboard */}
 
         <section
-          style={{
-            display: "grid",
-
-            gridTemplateColumns:
-  "repeat(auto-fit,minmax(320px,1fr))",
-
-            gap: 20,
-          }}
-        >
-          <RoundHistory />
-
-          <LiveBets />
-
-          <Statistics />
-        </section>
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(3,minmax(0,1fr))",
+    gap: 8,
+  }}
+>
+  <RoundHistory />
+  <LiveBets />
+  <Statistics />
+</section>
       </div>
     </main>
   );

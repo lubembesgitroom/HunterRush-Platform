@@ -3,6 +3,7 @@ import type { Bet } from "./BetManager.js";
 export interface CashoutResult {
   betId: string;
   playerId: string;
+  panelId?: number;
   multiplier: number;
   payout: number;
 }
@@ -25,6 +26,7 @@ export class CashoutManager {
     return {
       betId: bet.id,
       playerId: bet.playerId,
+      panelId: bet.panelId,
       multiplier,
       payout: bet.payout,
     };
@@ -58,6 +60,7 @@ export class CashoutManager {
     return {
       betId: bet.id,
       playerId: bet.playerId,
+      panelId: bet.panelId,
       multiplier: bet.autoCashout,
       payout: bet.payout,
     };

@@ -1,7 +1,13 @@
-import { randomUUID } from "node:crypto";
-
 import type { FairRound } from "./ProvablyFairService.js";
 import type { GameRound } from "./types.js";
+
+function generateId(): string {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 export class RoundManager {
   private currentRound: GameRound | null = null;
@@ -10,7 +16,7 @@ export class RoundManager {
 
   create(fair: FairRound): GameRound {
     const round: GameRound = {
-      id: randomUUID(),
+      id: generateId(),
       createdAt: Date.now(),
 
       crashPoint: fair.crashPoint,
@@ -23,12 +29,6 @@ export class RoundManager {
 
     this.currentRound = round;
 
-    this.history.unshift(round);
-
-    if (this.history.length > 20) {
-      this.history.pop();
-    }
-
     return round;
   }
 
@@ -37,6 +37,14 @@ export class RoundManager {
   }
 
   finish(): void {
+    if (this.currentRound) {
+      this.history.unshift({ ...this.currentRound });
+
+      if (this.history.length > 20) {
+        this.history.pop();
+      }
+    }
+
     this.currentRound = null;
   }
 

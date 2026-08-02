@@ -1,47 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useGame } from "@/hooks/useGame";
 import { useDemo } from "@/hooks/useDemo";
-import { useHost } from "@/hooks/useHost";
-
-import Panel from "@/components/ui/Panel";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
-
-import { formatCurrency } from "@/utils/formatCurrency";
+import { playSfx } from "@/lib/audio";
+import {
+  BetMode,
+  BetPanelState,
+  deriveBetPanelState,
+  getButtonLabel,
+} from "@/hooks/betPanelState";
 import { useBetStore } from "@/store/betStore";
 
 interface BetCardProps {
   title: string;
+  panelId: number;
 }
 
-const BET_CHIPS = [
-  50,
-  100,
-  200,
-  500,
-  1000,
-];
+const QUICK_BETS = [100, 200, 500, 2000];
 
-const AUTO_PRESETS = [
-  1.2,
-  1.5,
-  2,
-  5,
-  10,
-];
-
-export default function BetCard({
-  title,
-}: BetCardProps) {
+export default function BetCard({ panelId }: BetCardProps) {
   const {
-  balance: realBalance,
-  snapshot,
-  placeBet,
-  cashout,
-} = useGame();
+    balance: realBalance,
+    snapshot,
+    placeBet,
+    cashout,
+    multiplier,
+  } = useGame();
 
   const {
     isDemo,
@@ -49,431 +35,493 @@ export default function BetCard({
     decreaseDemoBalance,
   } = useDemo();
 
-  const { deposit } = useHost();
-  const { activeBet } = useBetStore();
-
   const balance = isDemo
     ? demoBalance
     : realBalance;
 
-  const phase =
-    snapshot?.phase ??
-    "WAITING";
-
-  const bettingOpen =
-    phase === "BETTING";
-  const hasActiveBet =
-  activeBet &&
-  (activeBet.status === "ACTIVE" ||
-    activeBet.status === "PENDING");
-
-const canCashout =
-  activeBet?.status === "ACTIVE";
+  const phase = snapshot?.phase ?? "WAITING";
+  const bettingOpen = phase === "BETTING";
+  const panelBet = useBetStore(
+    (state) => state.betsByPanel[panelId] ?? null,
+  );
 
   const [amount, setAmount] =
     useState(100);
-
   const [autoCashout, setAutoCashout] =
-  useState<number | null>(null);
+    useState(1.01);
+  const [autoCashoutInput, setAutoCashoutInput] =
+    useState("1.01");
+  const [mode, setMode] = useState<BetMode>(BetMode.MANUAL);
+  const [displayPayout, setDisplayPayout] = useState(100);
+  const [pulse, setPulse] = useState(false);
 
-  function handleBet() {
-  if (!bettingOpen) return;
+  const state = useMemo(
+    () =>
+      deriveBetPanelState(
+        phase,
+        panelBet?.status ?? null,
+      ),
+    [phase, panelBet?.status],
+  );
 
-  if (amount <= 0) return;
+  const hasActiveBet =
+    panelBet !== null &&
+    (panelBet.status === "ACTIVE" || panelBet.status === "PENDING");
 
-  if (amount > balance) return;
+  const canCashout =
+    state === BetPanelState.RUNNING && hasActiveBet;
 
-  if (isDemo) {
-    decreaseDemoBalance(amount);
+  const canEdit =
+    state === BetPanelState.READY ||
+    state === BetPanelState.WAITING;
+  const buttonLabel = useMemo(() => {
+    if (state === BetPanelState.RUNNING && !hasActiveBet) {
+      return "WAITING";
+    }
+
+    return getButtonLabel(
+      state,
+      mode,
+      multiplier,
+      autoCashout,
+    );
+  }, [state, mode, multiplier, autoCashout, hasActiveBet]);
+
+  useEffect(() => {
+    setAutoCashoutInput(autoCashout.toFixed(2));
+  }, [autoCashout]);
+
+  useEffect(() => {
+    if (!panelBet) return;
+
+    setPulse(true);
+    const timer = window.setTimeout(() => setPulse(false), 220);
+    return () => window.clearTimeout(timer);
+  }, [panelBet?.status, phase]);
+
+  useEffect(() => {
+    const targetPayout = amount * multiplier;
+    const startValue = displayPayout;
+    const startTime = performance.now();
+
+    let frameId = 0;
+
+    const animate = (now: number) => {
+      const progress = Math.min(1, (now - startTime) / 220);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const nextValue = startValue + (targetPayout - startValue) * eased;
+
+      setDisplayPayout(nextValue);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(animate);
+      }
+    };
+
+    frameId = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [amount, multiplier]);
+
+  function handlePrimaryAction() {
+    if (state === BetPanelState.RUNNING) {
+      cashout(panelId);
+      playSfx("cashout");
+      return;
+    }
+
+    if (
+      state !== BetPanelState.READY &&
+      state !== BetPanelState.WAITING
+    ) {
+      return;
+    }
+
+    if (!bettingOpen) return;
+
+    if (amount <= 0) return;
+
+    if (amount > balance) return;
+
+    if (isDemo) {
+      decreaseDemoBalance(amount);
+      playSfx("bet");
+      return;
+    }
+
+    const nextAutoCashout =
+      mode === BetMode.AUTO
+        ? autoCashout
+        : null;
 
     placeBet(
       amount,
-      autoCashout > 1
-        ? autoCashout
-        : null,
+      nextAutoCashout,
+      panelId,
     );
 
-    return;
+    playSfx("bet");
   }
 
-  placeBet(
-    amount,
-    autoCashout > 1
-      ? autoCashout
-      : null,
-  );
-}
-
   return (
-    <Panel title={title}>
-      <div
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: 18,
-    width: "100%",
-    minWidth: 0,
-  }}
->
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent:
-              "space-between",
-            alignItems:
-              "center",
-          }}
-        >
-          <div>
-            <div
-              style={{
-                color: "#9CA3AF",
-                fontSize: 12,
-                textTransform:
-                  "uppercase",
-                letterSpacing:
-                  ".08em",
-              }}
-            >
-              Wallet
-            </div>
-
-            <div
-              style={{
-                color: "#FFFFFF",
-                fontSize: 22,
-                fontWeight: 700,
-              }}
-            >
-              {formatCurrency(
-                balance,
-              )}
-            </div>
-          </div>
-
-          <Badge
-            color={
-              isDemo
-                ? "#7C3AED"
-                : "#2563EB"
-            }
-          >
-            {isDemo
-              ? "DEMO"
-              : "REAL"}
-          </Badge>
-        </div>
-
-        {!isDemo && (
-          <Button
-            fullWidth
-            onClick={deposit}
-          >
-            Deposit
-          </Button>
-        )}
-
-        <div>
-          <div
-            style={{
-              color: "#9CA3AF",
-              marginBottom: 8,
-              fontSize: 12,
-              textTransform:
-                "uppercase",
-            }}
-          >
-            Bet Amount
-          </div>
-
-          <input
-            type="number"
-            min={10}
-            value={amount}
-            disabled={!bettingOpen}
-            onChange={(e) =>
-              setAmount(
-                Number(
-                  e.target.value,
-                ),
-              )
-            }
-            style={{
-  width: "100%",
-  padding: 14,
-  background: "#181818",
-  color: "#FFFFFF",
-  border: "1px solid #2A2A2A",
-  outline: "none",
-  boxSizing: "border-box",
-  fontSize: 16,
-  borderRadius: 10,
-}}
-          />
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(3,1fr)",
-            gap: 8,
-          }}
-        >
-          {BET_CHIPS.map(
-            (chip) => (
-              <Button
-                key={chip}
-                disabled={
-                  !bettingOpen
-                }
-                onClick={() =>
-                  setAmount(
-                    chip,
-                  )
-                }
-              >
-                {chip}
-              </Button>
-            ),
-          )}
-
-          <Button
-  fullWidth
-  disabled={!bettingOpen || !!hasActiveBet}
-  onClick={handleBet}
->
-  {hasActiveBet
-    ? "BET PLACED"
-    : bettingOpen
-      ? isDemo
-        ? "PLACE DEMO BET"
-        : "PLACE BET"
-      : "BETTING CLOSED"}
-</Button>
-          {activeBet && (
-  <Panel>
     <div
       style={{
+        background: "#1B1F26",
+
+        borderRadius: 16,
+
+        transform: pulse ? "translateY(-1px) scale(1.01)" : "translateY(0) scale(1)",
+
+        transition: "transform 180ms ease, box-shadow 180ms ease",
+
+        boxShadow: pulse ? "0 0 0 1px rgba(255,255,255,0.06), 0 10px 30px rgba(0,0,0,0.22)" : "none",
+
+        padding: 10,
+
         display: "flex",
-        flexDirection: "column",
-        gap: 12,
+
+        gap: 10,
+
+        alignItems: "stretch",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <span>Stake</span>
-
-        <strong>
-          {formatCurrency(activeBet.wager)}
-        </strong>
-      </div>
+      {/* LEFT */}
 
       <div
         style={{
+          flex: 1.2,
+
           display: "flex",
-          justifyContent: "space-between",
+
+          flexDirection: "column",
+
+          gap: 8,
         }}
       >
-        <span>Status</span>
+        {/* Bet / Auto */}
 
-        <Badge color="#22C55E">
-          {activeBet.status}
-        </Badge>
-      </div>
-
-      {activeBet.status === "ACTIVE" && (
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
+
+            background: "#14171C",
+
+            borderRadius: 20,
+
+            padding: 2,
           }}
         >
-          <span>Current</span>
-
-          <strong>
-            {snapshot?.multiplier.toFixed(2)}×
-          </strong>
-        </div>
-      )}
-
-      {activeBet.status === "CASHED_OUT" && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <span>Payout</span>
-
-          <strong
+          <button
+            onClick={() => setMode(BetMode.MANUAL)}
             style={{
-              color: "#22C55E",
+              flex: 1,
+
+              background:
+                mode === BetMode.MANUAL
+                  ? "#323741"
+                  : "transparent",
+
+              color: "#fff",
+
+              border: "none",
+
+              borderRadius: 18,
+
+              padding: "6px",
+
+              fontWeight: 700,
+
+              fontSize: 12,
+
+              cursor: "pointer",
             }}
           >
-            {formatCurrency(activeBet.payout)}
-          </strong>
+            Bet
+          </button>
+
+          <button
+            onClick={() => setMode(BetMode.AUTO)}
+            style={{
+              flex: 1,
+
+              background:
+                mode === BetMode.AUTO
+                  ? "#323741"
+                  : "transparent",
+
+              color: "#9EA2AA",
+
+              border: "none",
+
+              fontSize: 12,
+
+              cursor: "pointer",
+            }}
+          >
+            Auto
+          </button>
         </div>
-      )}
 
-      {canCashout && (
-        <Button
-          fullWidth
-          onClick={cashout}
+        {/* Amount */}
+
+        <div
+          style={{
+            display: "flex",
+
+            alignItems: "center",
+
+            justifyContent:
+              "space-between",
+
+            background: "#14171C",
+
+            borderRadius: 8,
+
+            padding: "8px 10px",
+          }}
         >
-          CASH OUT
-        </Button>
-      )}
-    </div>
-  </Panel>
-)}
-
-        <div>
-  <div
-    style={{
-      color: "#9CA3AF",
-      marginBottom: 8,
-      fontSize: 12,
-      textTransform: "uppercase",
-    }}
-  >
-    Auto Cash Out
-  </div>
-
-  <input
-    type="number"
-    min={1.01}
-    step="0.1"
-    placeholder="OFF"
-    value={autoCashout ?? ""}
-    disabled={!bettingOpen}
-    onChange={(e) => {
-      const value = e.target.value;
-
-      if (value === "") {
-        setAutoCashout(null);
-      } else {
-        setAutoCashout(Number(value));
-      }
-    }}
-    style={{
-  width: "100%",
-  padding: 14,
-  background: "#181818",
-  color: "#FFFFFF",
-  border: "1px solid #2A2A2A",
-  outline: "none",
-  boxSizing: "border-box",
-  fontSize: 16,
-  borderRadius: 10,
-}}
-  />
-</div>
-
-          <input
-            type="number"
-            step="0.1"
-            value={autoCashout}
-            disabled={!bettingOpen}
-            onChange={(e) =>
-              setAutoCashout(
-                Number(
-                  e.target.value,
+          <button
+            disabled={!canEdit}
+            onClick={() =>
+              setAmount(
+                Math.max(
+                  10,
+                  amount - 10,
                 ),
               )
             }
+            style={{...buttonStyle, opacity: canEdit ? 1 : 0.4}}
+          >
+            −
+          </button>
+
+          <span
             style={{
-              width: "100%",
-              padding: 14,
-              background:
-                "#181818",
-              color: "#FFFFFF",
-              border:
-                "1px solid #2A2A2A",
-              outline: "none",
+              color: "#fff",
+
+              fontWeight: 700,
+
+              fontSize: 18,
             }}
-          />
+          >
+            {amount.toFixed(2)}
+          </span>
+
+          <button
+            disabled={!canEdit}
+            onClick={() =>
+              setAmount(
+                amount + 10,
+              )
+            }
+            style={{...buttonStyle, opacity: canEdit ? 1 : 0.4}}
+          >
+            +
+          </button>
         </div>
+
+        {/* Quick Bets */}
 
         <div
           style={{
             display: "grid",
+
             gridTemplateColumns:
-              "repeat(5,1fr)",
-            gap: 8,
+              "repeat(2,1fr)",
+
+            gap: 6,
           }}
         >
-          {AUTO_PRESETS.map(
-            (value) => (
-              <Button
-                key={value}
-                disabled={
-                  !bettingOpen
-                }
+          {QUICK_BETS.map(
+            (chip) => (
+              <button
+                key={chip}
+                disabled={!canEdit}
                 onClick={() =>
-                  setAutoCashout(
-                    value,
-                  )
+                  setAmount(chip)
                 }
+                style={{
+                  background:
+                    "#14171C",
+
+                  border: "none",
+
+                  color: "#9EA2AA",
+
+                  padding: "8px",
+
+                  borderRadius: 8,
+
+                  fontSize: 12,
+
+                  cursor: "pointer",
+                }}
               >
-                {value}×
-              </Button>
+                {chip.toLocaleString()}
+              </button>
             ),
           )}
+
+          <button
+            disabled={!canEdit}
+            onClick={() =>
+              setAmount(
+                Math.floor(
+                  balance,
+                ),
+              )
+            }
+            style={{
+              background:
+                "#14171C",
+
+              border: "none",
+
+              color: "#00E676",
+
+              padding: "8px",
+
+              borderRadius: 8,
+
+              fontWeight: 700,
+
+              cursor: "pointer",
+            }}
+          >
+            MAX
+          </button>
         </div>
 
-        <Button
-          fullWidth
-          disabled={!bettingOpen}
-          onClick={handleBet}
-        >
-          <Button
-  disabled={!bettingOpen}
-  onClick={() => setAutoCashout(null)}
->
-  OFF
-</Button>
-          {bettingOpen
-            ? isDemo
-              ? "PLACE DEMO BET"
-              : "PLACE BET"
-            : "BETTING CLOSED"}
-        </Button>
+        {mode === BetMode.AUTO && (
+          <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", background:"#14171C", borderRadius:8, padding:"8px 10px", gap:8}}>
+            <span style={{color:"#9EA2AA", fontSize:12}}>Auto Cashout</span>
+            <div style={{display:"flex", alignItems:"center", gap:8, flex:1, justifyContent:"flex-end"}}>
+              <button disabled={!canEdit} onClick={() => setAutoCashout((value) => Math.max(1.01, Number((value - 0.01).toFixed(2))))} style={{...buttonStyle, width:28, height:28, fontSize:14}}>−</button>
+              <input
+                inputMode="decimal"
+                value={autoCashoutInput}
+                onChange={(event) => {
+                  const nextValue = event.target.value.replace(/[^0-9.]/g, "");
+                  setAutoCashoutInput(nextValue);
+
+                  const parsed = Number.parseFloat(nextValue);
+                  if (!Number.isFinite(parsed)) return;
+
+                  const normalized = Math.min(1000, Math.max(1.01, Number(parsed.toFixed(2))));
+                  setAutoCashout(normalized);
+                }}
+                onBlur={() => {
+                  const parsed = Number.parseFloat(autoCashoutInput);
+                  if (!Number.isFinite(parsed)) {
+                    setAutoCashoutInput(autoCashout.toFixed(2));
+                    return;
+                  }
+
+                  const normalized = Math.min(1000, Math.max(1.01, Number(parsed.toFixed(2))));
+                  setAutoCashout(normalized);
+                  setAutoCashoutInput(normalized.toFixed(2));
+                }}
+                disabled={!canEdit}
+                style={{width:74, height:30, borderRadius:8, border:"1px solid rgba(255,255,255,0.12)", background:"#0F1217", color:"#fff", textAlign:"center", fontWeight:700, fontSize:13}}
+              />
+              <button disabled={!canEdit} onClick={() => setAutoCashout((value) => Math.min(1000, Number((value + 0.01).toFixed(2))))} style={{...buttonStyle, width:28, height:28, fontSize:14}}>+</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* RIGHT */}
+
+      <button
+        disabled={
+          !bettingOpen && state !== BetPanelState.RUNNING
+            ? true
+            : state === BetPanelState.BET_PLACED || state === BetPanelState.CASHED_OUT || state === BetPanelState.LOST || (state === BetPanelState.RUNNING && !hasActiveBet)
+        }
+        onClick={handlePrimaryAction}
+        style={{
+          flex: 1,
+
+          background:
+            state === BetPanelState.RUNNING && hasActiveBet
+              ? "#ff8a00"
+              : state === BetPanelState.BET_PLACED
+                ? "#5b4d00"
+                : state === BetPanelState.CASHED_OUT || state === BetPanelState.LOST
+                  ? "#5a2f2f"
+                  : bettingOpen
+                    ? "#19B300"
+                    : "#3D3D3D",
+
+          border: "none",
+
+          borderRadius: 12,
+
+          color: "#fff",
+
+          fontWeight: 700,
+
+          fontSize: 24,
+
+          cursor:
+            state === BetPanelState.BET_PLACED || state === BetPanelState.CASHED_OUT || state === BetPanelState.LOST || (state === BetPanelState.RUNNING && !hasActiveBet)
+              ? "default"
+              : bettingOpen || (state === BetPanelState.RUNNING && hasActiveBet)
+                ? "pointer"
+                : "default",
+
+          display: "flex",
+
+          flexDirection: "column",
+
+          justifyContent: "center",
+
+          alignItems: "center",
+
+          minHeight: 145,
+          transition: "background 160ms ease",
+        }}
+      >
+        <div>{buttonLabel}</div>
 
         <div
           style={{
-            display: "flex",
-            justifyContent:
-              "space-between",
-            alignItems:
-              "center",
+            fontSize: 18,
+
+            marginTop: 6,
           }}
         >
-          <span
-            style={{
-              color:
-                "#9CA3AF",
-            }}
-          >
-            Status
-          </span>
-
-          <Badge
-            color={
-              bettingOpen
-                ? "#2563EB"
-                : "#6B7280"
-            }
-          >
-            {phase}
-          </Badge>
+          {state === BetPanelState.READY || state === BetPanelState.WAITING
+            ? `${amount.toFixed(2)} KES`
+            : state === BetPanelState.BET_PLACED
+              ? "BET ACCEPTED"
+              : state === BetPanelState.RUNNING
+                ? `KES ${displayPayout.toLocaleString("en-KE", { maximumFractionDigits: 0 })}`
+                : state === BetPanelState.CASHED_OUT
+                  ? "✓ CASHED OUT"
+                  : "YOU LOST"}
         </div>
-      </div>
-    </Panel>
+      </button>
+    </div>
   );
 }
+
+const buttonStyle = {
+  width: 34,
+
+  height: 34,
+
+  borderRadius: 17,
+
+  border: "none",
+
+  background: "#2B313C",
+
+  color: "#fff",
+
+  fontWeight: 700,
+
+  cursor: "pointer",
+
+  fontSize: 18,
+};

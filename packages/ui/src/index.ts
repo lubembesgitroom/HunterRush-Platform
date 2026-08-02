@@ -1,8 +1,7 @@
-export * from "./button";
-export * from "./card";
-export * from "./code";
-
-export * from "./Header";
-export * from "./Sidebar";
-export * from "./GameViewport";
-export * from "./StatusBar";
+export * from "./button.js";
+export * from "./card.js";
+export * from "./code.js";
+export * from "./Header.js";
+export * from "./Sidebar.js";
+export * from "./GameViewport.js";
+export * from "./StatusBar.js";

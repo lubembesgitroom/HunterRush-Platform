@@ -32,9 +32,9 @@ export default function BetPanel() {
           gap: 18,
         }}
       >
-        <BetCard title="Bet 1" />
+        <BetCard title="Bet 1" panelId={1} />
 
-        <BetCard title="Bet 2" />
+        <BetCard title="Bet 2" panelId={2} />
       </div>
 
       <div

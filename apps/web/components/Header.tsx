@@ -1,86 +1,125 @@
 "use client";
 
 import { useGame } from "@/hooks/useGame";
-import { formatCurrency } from "@/lib/formatCurrency";
+import { theme } from "@/theme/theme";
+import { layout } from "@/theme/layout";
 
 export default function Header() {
-  const {
-    connected,
-    balance,
-    player,
-  } = useGame();
+  const { balance } = useGame();
 
   return (
-    <header className="flex flex-col gap-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-xl lg:flex-row lg:items-center lg:justify-between">
+    <header
+      style={{
+        height: 72,
 
+        background: "#14171C",
+
+        borderBottom: "1px solid #232833",
+
+        display: "flex",
+
+        alignItems: "center",
+
+        justifyContent: "space-between",
+
+        padding: "0 16px",
+
+        position: "sticky",
+
+        top: 0,
+
+        zIndex: 100,
+      }}
+    >
       {/* Left */}
 
-      <div>
+      <div
+        style={{
+          display: "flex",
 
-        <h1 className="text-5xl font-black tracking-tight text-white">
-          HunterRush
-        </h1>
+          alignItems: "center",
 
-        <p className="mt-2 text-lg text-zinc-400">
-          Real-Time Multiplayer Crash Game
-        </p>
+          gap: 14,
+        }}
+      >
+        <div
+          style={{
+            width: 54,
 
+            height: 54,
+
+            borderRadius: 16,
+
+            background: "#00C853",
+
+            display: "flex",
+
+            alignItems: "center",
+
+            justifyContent: "center",
+
+            color: "#FFFFFF",
+
+            fontWeight: 900,
+
+            fontSize: 24,
+
+            boxShadow: theme.shadow.glow,
+          }}
+        >
+          H
+        </div>
+
+        <div>
+          <div
+            style={{
+              color: "#FFFFFF",
+
+              fontSize: 18,
+
+              fontWeight: 800,
+
+              lineHeight: 1.2,
+            }}
+          >
+            HunterRush
+          </div>
+        </div>
       </div>
 
       {/* Right */}
 
-      <div className="flex flex-wrap items-center gap-4">
+      <div
+        style={{
+          textAlign: "right",
+        }}
+      >
+        <div
+          style={{
+            color: "#9CA3AF",
 
-        {/* Connection */}
+            fontSize: 11,
 
-        <div className="flex items-center gap-2 rounded-xl bg-zinc-800 px-4 py-3">
+            marginBottom: 4,
 
-          <span
-            className={`h-3 w-3 rounded-full ${
-              connected
-                ? "bg-green-500"
-                : "bg-red-500"
-            }`}
-          />
-
-          <span className="font-medium">
-            {connected
-              ? "Connected"
-              : "Disconnected"}
-          </span>
-
+            textTransform: "uppercase",
+          }}
+        >
+          Wallet
         </div>
 
-        {/* Wallet */}
+        <div
+          style={{
+            color: "#00E676",
 
-        <div className="rounded-xl bg-zinc-800 px-5 py-3">
+            fontSize: 22,
 
-          <p className="text-xs uppercase tracking-wide text-zinc-400">
-            Wallet
-          </p>
-
-          <h2 className="text-xl font-bold text-emerald-400">
-            {formatCurrency(balance)}
-          </h2>
-
+            fontWeight: 800,
+          }}
+        >
+          KSh {balance.toFixed(2)}
         </div>
-
-        {/* Player */}
-
-        <div className="rounded-xl bg-zinc-800 px-5 py-3">
-
-          <p className="text-xs uppercase tracking-wide text-zinc-400">
-            Player
-          </p>
-
-          <h2 className="font-semibold text-white">
-            {player?.username ?? "Guest"}
-          </h2>
-
-        </div>
-
       </div>
-
     </header>
   );
 }

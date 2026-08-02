@@ -1,7 +1,5 @@
-import { createHash } from "node:crypto";
+import { sha256Hex } from "./crypto.js";
 
 export function hashServerSeed(serverSeed: string): string {
-  return createHash("sha256")
-    .update(serverSeed)
-    .digest("hex");
+  return sha256Hex(serverSeed);
 }

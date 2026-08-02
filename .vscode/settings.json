@@ -1,0 +1,5 @@
+{
+    "chat.agent.maxRequests": 80,
+    "deepseek-copilot.maxTokens": 80,
+    "deepseek-copilot.experimental.stabilizeToolList": true
+}

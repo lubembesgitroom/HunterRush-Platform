@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomHex } from "./crypto.js";
 
 export interface RoundSeed {
   serverSeed: string;
@@ -6,11 +6,11 @@ export interface RoundSeed {
 }
 
 export function generateServerSeed(): string {
-  return randomBytes(32).toString("hex");
+  return randomHex(32);
 }
 
 export function generateClientSeed(): string {
-  return randomBytes(16).toString("hex");
+  return randomHex(16);
 }
 
 export function generateSeeds(): RoundSeed {
